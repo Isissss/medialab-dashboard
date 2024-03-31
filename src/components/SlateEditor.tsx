@@ -82,6 +82,9 @@ const withInlines = editor => {
 const serialize = (node: Node) => {
   if (SlateText.isText(node)) {
     let string = node.text
+
+    if (string.replace(/\s/g, '').length === 0) return '' // if the string is empty, dont apply styles because it's glitchy
+
     if (node.bold) {
       string = `**${string}**`
     }
