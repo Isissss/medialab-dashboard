@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans"; 
 import { Toaster } from "@/components/ui/Toast/toaster";
 import clsx from "clsx";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -21,7 +21,13 @@ export default function RootLayout({
       <head>
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
       </head>
-      <body className={clsx(GeistSans.className, "bg-[#f3f4f6] container")}>
+      <body className={clsx(GeistSans.className, "bg-[#f3f4f6] min-h-screen")}>
+        <nav className="w-full p-2 bg-white shadow-sm mb-10">
+          <ul className="flex gap-4">
+            <li className="font-bold">NPO Discord Dashboard</li>
+            <li><Link href="/" className="hover:underline">Project info</Link></li>
+          </ul>
+        </nav>
         {children}
         <Toaster />
       </body>

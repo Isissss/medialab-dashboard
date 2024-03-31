@@ -1,10 +1,9 @@
-import React, { useMemo, useEffect, forwardRef, useCallback, ReactNode, ButtonHTMLAttributes } from 'react'
+import React, { useMemo, useEffect, forwardRef, useCallback, ButtonHTMLAttributes, KeyboardEvent } from 'react'
 import { Slate, Editable, withReact, useSlate, useSelected, ReactEditor } from 'slate-react'
-import ReactDOM from 'react-dom'
 import {
   Editor,
   Transforms,
-  Text,
+  Text as SlateText,
   createEditor,
   Descendant,
   Range,
@@ -14,10 +13,10 @@ import {
 } from 'slate'
 import isHotkey from 'is-hotkey'
 import isUrl from 'is-url'
-import { Icon } from '../ui/icon';
+import { Icon } from './ui/icon';
 import clsx from 'clsx';
-import { Label } from '../ui/label';
-type CustomElement = { type: 'paragraph'; children: Descendant[] } 
+import { Label } from './ui/label';
+type CustomElement = { type: 'paragraph'; children: Descendant[] }
 type CustomLinkElement = { type: 'link'; url: string; children: CustomText[] }
 type CustomText = { text: string; strikethrough?: true } & { text: string; bold?: true } & { text: string; italic?: true } & { text: string; underlined?: true }
 
@@ -28,15 +27,20 @@ declare module 'slate' {
     Element: CustomElement | CustomLinkElement
     Text: CustomText
   }
-}
+} 
 
-type Props = {
-  updateObj: (obj: any) => void
-}
+const InlineChromiumBugfix = () => (
+  <span
+    contentEditable={false}
+    className="text-[0px]"
+  >
+    {String.fromCodePoint(160) /* Non-breaking space */}
+  </span>
+)
 
 const withInlines = editor => {
-  const { insertData, insertText, isInline, isElementReadOnly  } =
-    editor 
+  const { insertData, insertText, isInline, isElementReadOnly } =
+    editor
 
   editor.isInline = element =>
     ['link'].includes(element.type) || isInline(element)
@@ -44,7 +48,7 @@ const withInlines = editor => {
   editor.isElementReadOnly = element =>
     element.type === 'badge' || isElementReadOnly(element)
 
-  editor.insertText = text => {
+  editor.insertText = (text: string) => {
     if (text && isUrl(text)) {
       wrapLink(editor, text)
     } else {
@@ -66,7 +70,7 @@ const withInlines = editor => {
 }
 
 const serialize = (node: Node) => {
-  if (Text.isText(node)) {
+  if (SlateText.isText(node)) {
     let string = node.text
     if (node.bold) {
       string = `**${string}**`
@@ -82,9 +86,7 @@ const serialize = (node: Node) => {
 
     if (node.strikethrough) {
       string = `~~${string}~~`
-    }
-
-    // get data-slate-length attribute
+    } 
 
     return string
   }
@@ -96,6 +98,8 @@ const serialize = (node: Node) => {
       return `${children}\n`
     case 'link':
       node = node as CustomLinkElement
+      console.log(children)
+      if (isUrl(children)) return node.url; // if the children is a url, return the url because it's already displayed as a link
       return `[${children}](${node.url})`
     default:
       return children
@@ -116,19 +120,19 @@ const wrapLink = (editor: Editor, url: string) => {
 
   const { selection } = editor
   const isCollapsed = selection && Range.isCollapsed(selection)
+  console.log(isCollapsed)
 
   const link = {
     type: 'link',
     url,
     children: isCollapsed ? [{ text: url }] : [],
-  }  as SlateElement
+  } as SlateElement
 
   if (isCollapsed) {
     Transforms.insertNodes(editor, link)
-     Transforms.unsetNodes(editor, 'url')
   } else {
     Transforms.wrapNodes(editor, link, { split: true })
-    Transforms.collapse(editor, { edge: 'end' })  
+    Transforms.collapse(editor, { edge: 'end' })
   }
 }
 const LinkComponent = ({ attributes, children, element }) => {
@@ -147,7 +151,9 @@ const LinkComponent = ({ attributes, children, element }) => {
           <span className='hidden group-hover:block absolute -top-10 bg-gray-300 rounded-md p-2 text-black' contentEditable={false}>
             {element.url}
           </span>
+          <InlineChromiumBugfix />
           {children}
+          <InlineChromiumBugfix />
         </a>
       </span>
     </>
@@ -161,17 +167,17 @@ const HOTKEYS = {
 }
 
 type PropsWithChildren = {
-  className?: string; 
+  className?: string;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-const Toolbar = forwardRef<HTMLDivElement, PropsWithChildren>(
-  ({ className, ...props }, ref) => (
-    <Menu
-      {...props}
-      ref={ref}
-      className={`${className} relative mt-0 flex flex-row gap-2`}
-    />
-  )
+const Toolbar = ({ className, ...props }: PropsWithChildren) => (
+  <Menu
+    {...props}
+    className={clsx(
+      className,
+      'relative mt-0 flex flex-row gap-2'
+    )}
+  />
 );
 
 const MarkButton = ({ format, icon }) => {
@@ -183,35 +189,42 @@ const MarkButton = ({ format, icon }) => {
         event.preventDefault()
         toggleMark(editor, format)
       }}
+      onClick={(e) => e.preventDefault()}
     >
       <Icon>{icon}</Icon>
     </Button>
   )
 }
 
+const checkForHotkey = (event: KeyboardEvent<HTMLDivElement>, editor: Editor) => {
+  for (const hotkey in HOTKEYS) {
+    if (isHotkey(hotkey, event as any)) {
+      event.preventDefault()
+      const mark = HOTKEYS[hotkey]
+      toggleMark(editor, mark)
+    }
+  }
+} 
 
-export const HoveringMenuExample = ({ updateObj }: Props) => {
+export const SlateEditor = ({ onUpdate }: { onUpdate: (value: string) => void }) => {
   const editor = useMemo(() => withInlines(withReact(createEditor())), [])
   const renderElement = useCallback(props => <Element {...props} />, [])
   const renderLeaf = useCallback(props => <Leaf {...props} />, [])
   const [value, setValue] = React.useState("")
 
-  useEffect(() => {
-    console.log(value)
-    updateObj((prev) => ({
-      ...prev,
-      description: value
-    }));
-  }
-    , [value])
+  useEffect(() => { 
+    onUpdate(value)
+  }, [value])
+
   return (
-    <div className='max-w-[520px] mb-4'>
-      <Slate editor={editor} initialValue={initialValue}
+    <div className='w-full mb-4'>
+      <Slate editor={editor}
+        initialValue={[{ type: 'paragraph', children: [{ text: '' }] }] as Descendant[]}
         onChange={() =>
           setValue(serialize(editor))
         }>
         <div className='flex flex-col lg:flex-row lg:gap-3 lg:justify-between lg:items-end mb-4'>
-          <Label className='text-[14px] font-semibold text-gray-700'>Content  </Label>
+          <Label className='text-[14px] font-semibold text-gray-700' htmlFor="description">Content  </Label>
           <Toolbar>
             <MarkButton format="bold" icon="format_bold" />
             <MarkButton format="italic" icon="format_italic" />
@@ -222,21 +235,13 @@ export const HoveringMenuExample = ({ updateObj }: Props) => {
           </Toolbar>
         </div>
         <div className='flex flex-row justify-between'>
-          <p className="text-xs text-gray-500">Gebruik de knoppen rechts om opmaak toe te voegen.</p> <span className='italic text-gray-500 font-normal text-xs'>{value.length} / 2000</span> </div>
+          <p className="text-xs text-gray-500 mb-2">Gebruik de knoppen rechts om opmaak toe te voegen.</p> <span className='italic text-gray-500 font-normal text-xs'>{value.length} / 2000</span> </div>
         <Editable
-          className='p-4 rounded-md border border-gray-200 text-[14px]'
+          className='p-4 rounded-md border border-gray-200 text-[14px] !min-h-[150px] border-input bg-background px-3 py-2 text-sm !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50'
           renderElement={renderElement}
+          name='description'
           renderLeaf={renderLeaf}
-          placeholder="Enter some text..."
-          onKeyDown={event => {
-            for (const hotkey in HOTKEYS) {
-              if (isHotkey(hotkey, event as any)) {
-                event.preventDefault()
-                const mark = HOTKEYS[hotkey]
-                toggleMark(editor, mark)
-              }
-            }
-          }}
+          onKeyDown={event => checkForHotkey(event, editor)}
           onDOMBeforeInput={(event: InputEvent) => {
             switch (event.inputType) {
               case 'formatBold':
@@ -270,13 +275,6 @@ const Menu = forwardRef<HTMLDivElement, PropsWithChildren>(
   )
 );
 
-
-export const Portal = ({ children }: { children?: ReactNode }) => {
-  return typeof document === 'object'
-    ? ReactDOM.createPortal(children, document.body)
-    : null
-}
-
 const Element = props => {
   const { attributes, children, element } = props
   switch (element.type) {
@@ -298,7 +296,7 @@ const toggleMark = (editor: Editor, format: string) => {
 }
 
 const isMarkActive = (editor: Editor, format: string) => {
-  const marks = Editor.marks(editor) as { [key: string]: boolean } | null
+  const marks = Editor.marks(editor)
   return marks ? marks[format] === true : false
 }
 
@@ -319,21 +317,21 @@ const Leaf = ({ attributes, children, leaf }: { attributes: any, children: any, 
     children = <del>{children}</del>
   }
 
-  return <span {...attributes}>{children}</span>
-}
-
-
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { 
-  active?: boolean;
-  reversed?: boolean;
-}
+  return <span className={
+    leaf.text === '' && "pl-[0.1px]"
+  } {...attributes}>{children}</span>
+} 
 
 export const Button = ({
   className,
   active,
   reversed,
   ...props
-}: ButtonProps) => (
+}: {
+  className?: string;
+  active?: boolean;
+  reversed?: boolean;
+} & ButtonHTMLAttributes<HTMLButtonElement>) => (
   <button
     {...props}
     className={`${className} cursor-pointer bg-slate-50 p-[2px] rounded-md border ${reversed ? (active ? 'text-white' : 'text-gray-500') : (active ? 'text-black' : 'text-gray-400')}`}
@@ -364,7 +362,7 @@ const isLinkActive = (editor: Editor) => {
   return !!link
 }
 
-const unwrapLink =  (editor: Editor) => {
+const unwrapLink = (editor: Editor) => {
   Transforms.unwrapNodes(editor, {
     match: n =>
       !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === 'link',
@@ -381,6 +379,7 @@ const RemoveLinkButton = () => {
           unwrapLink(editor)
         }
       }}
+      onClick={(e) => e.preventDefault()}
     >
       <Icon>link_off</Icon>
     </Button>
@@ -388,33 +387,4 @@ const RemoveLinkButton = () => {
 }
 
 
-
-const initialValue: Descendant[] = [
-  {
-    type: 'paragraph',
-    children: [
-      {
-        type: 'link',
-        url: 'https://en.wikipedia.org/wiki/Hypertext',
-        children: [{ text: 'hyperlink' }],
-      },
-      {
-        text: 'This example shows how you can make a hovering menu appear above your content, which you can use to make text ',
-      },
-      { text: 'bold', bold: true },
-      { text: ', ' },
-      { text: 'italic', italic: true },
-      { text: ', or anything else you might want to do!' },
-    ],
-  },
-  {
-    type: 'paragraph',
-    children: [
-      { text: 'Try it out yourself! Just ' },
-      { text: 'select any piece of text and the menu will appear', bold: true },
-      { text: '.' },
-    ],
-  },
-]
-
-export default HoveringMenuExample
+export default SlateEditor
