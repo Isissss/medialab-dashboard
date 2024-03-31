@@ -18,7 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={clsx(GeistSans.className, "bg-[#f3f4f6]")}>
+      <head>
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      </head>
+      <body className={clsx(GeistSans.className, "bg-[#f3f4f6] container")}>
         {children}
         <Toaster />
       </body>
