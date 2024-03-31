@@ -24,7 +24,7 @@ export function Dashboard() {
   const [messageContent, setMessageContent] = useState({
     title: "",
     description: undefined,
-    color: 0xFFA500,
+    color: 0xF97316,
     image: undefined,
     titleUrl: undefined,
     thumbnail: undefined,
@@ -143,7 +143,7 @@ export function Dashboard() {
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="thumbnail">Thumbnail foto</Label>
                 <input className="hidden" type="file" name="thumbnail" id="thumbnail" onChange={onThumbnailUpload} />
-                <div className="relative h-40 w-40  border-2 border-dashed  rounded-lg">
+                <div className="relative h-36 w-36  border-2 border-dashed  rounded-lg">
                   <label className="w-full h-full flex justify-center items-center cursor-pointer" htmlFor="thumbnail">
                     {messageContent.thumbnail ? <NextImage fill src={messageContent.thumbnail.src} alt="thumbnail" className="h-full w-full object-cover" /> : <ImageIcon size={40} />}
                   </label>
@@ -154,9 +154,9 @@ export function Dashboard() {
             <Label htmlFor="image">Grote foto (optioneel)</Label>
             <input onChange={onBannerImageUpload}
               className="hidden" type="file" name="image" id="image" />
-            <div className="relative w-full min-h-40   border-2 border-dashed  rounded-md">
-              <label className=" min-h-40 w-full h-full flex justify-center items-center cursor-pointer" htmlFor="image">
-                {messageContent.image ? <NextImage fill src={messageContent.image.src} alt="image" className="h-full w-auto object-cover" /> : <ImageIcon size={40} />}
+            <div className="  w-full min-h-40 h-full border-2 border-dashed rounded-md">
+              <label className="min-h-40   h-full flex justify-center items-center cursor-pointer" htmlFor="image">
+                {messageContent.image ? <NextImage width={600} height={400} src={messageContent.image.src} alt="image" className="h-full w-auto object-cover" /> : <ImageIcon size={40} />}
               </label>
             </div>
           </CardContent>

@@ -12,15 +12,15 @@ export const sendDiscordWebhook = async (message: string) => {
     }
 
     const urlPromises = webhooks.map((webhook: any) => {
+        if (!webhook.webhookURL) {
+            return;
+        }
+        
         postToWebhook(webhook.webhookURL, embed);
     });
 
-    try {
-        await Promise.all(urlPromises);
-        return true;
-    } catch (error) {
-        throw new Error('Failed to send Discord webhook');
-    } 
+    await Promise.all(urlPromises);
+    return true;
 }
 
 const postToWebhook = async (url: string, message: EmbedBuilder) => {

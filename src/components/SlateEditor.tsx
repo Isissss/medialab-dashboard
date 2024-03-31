@@ -16,10 +16,20 @@ import isUrl from 'is-url'
 import { Icon } from './ui/icon';
 import clsx from 'clsx';
 import { Label } from './ui/label';
+
 type CustomElement = { type: 'paragraph'; children: Descendant[] }
 type CustomLinkElement = { type: 'link'; url: string; children: CustomText[] }
 type CustomText = { text: string; strikethrough?: true } & { text: string; bold?: true } & { text: string; italic?: true } & { text: string; underlined?: true }
 
+type PropsWithChildren = {
+  className?: string;
+} & React.HTMLAttributes<HTMLDivElement>;
+
+const HOTKEYS = {
+  'mod+b': 'bold',
+  'mod+i': 'italic',
+  'mod+u': 'underline',
+}
 
 declare module 'slate' {
   interface CustomTypes {
@@ -27,7 +37,7 @@ declare module 'slate' {
     Element: CustomElement | CustomLinkElement
     Text: CustomText
   }
-} 
+}
 
 const InlineChromiumBugfix = () => (
   <span
@@ -86,7 +96,7 @@ const serialize = (node: Node) => {
 
     if (node.strikethrough) {
       string = `~~${string}~~`
-    } 
+    }
 
     return string
   }
@@ -135,6 +145,7 @@ const wrapLink = (editor: Editor, url: string) => {
     Transforms.collapse(editor, { edge: 'end' })
   }
 }
+
 const LinkComponent = ({ attributes, children, element }) => {
   const selected = useSelected()
   return (
@@ -160,18 +171,8 @@ const LinkComponent = ({ attributes, children, element }) => {
   )
 }
 
-const HOTKEYS = {
-  'mod+b': 'bold',
-  'mod+i': 'italic',
-  'mod+u': 'underline',
-}
-
-type PropsWithChildren = {
-  className?: string;
-} & React.HTMLAttributes<HTMLDivElement>;
-
 const Toolbar = ({ className, ...props }: PropsWithChildren) => (
-  <Menu
+  <div
     {...props}
     className={clsx(
       className,
@@ -189,7 +190,7 @@ const MarkButton = ({ format, icon }) => {
         event.preventDefault()
         toggleMark(editor, format)
       }}
-      onClick={(e) => e.preventDefault()}
+      onClick={(e) => e.preventDefault()} 
     >
       <Icon>{icon}</Icon>
     </Button>
@@ -204,7 +205,7 @@ const checkForHotkey = (event: KeyboardEvent<HTMLDivElement>, editor: Editor) =>
       toggleMark(editor, mark)
     }
   }
-} 
+}
 
 export const SlateEditor = ({ onUpdate }: { onUpdate: (value: string) => void }) => {
   const editor = useMemo(() => withInlines(withReact(createEditor())), [])
@@ -212,7 +213,7 @@ export const SlateEditor = ({ onUpdate }: { onUpdate: (value: string) => void })
   const renderLeaf = useCallback(props => <Leaf {...props} />, [])
   const [value, setValue] = React.useState("")
 
-  useEffect(() => { 
+  useEffect(() => {
     onUpdate(value)
   }, [value])
 
@@ -235,7 +236,9 @@ export const SlateEditor = ({ onUpdate }: { onUpdate: (value: string) => void })
           </Toolbar>
         </div>
         <div className='flex flex-row justify-between'>
-          <p className="text-xs text-gray-500 mb-2">Gebruik de knoppen rechts om opmaak toe te voegen.</p> <span className='italic text-gray-500 font-normal text-xs'>{value.length} / 2000</span> </div>
+          <p className="text-xs text-gray-500 mb-2">Gebruik de knoppen rechts om opmaak toe te voegen.</p>
+          <span className='italic text-gray-500 font-normal text-xs'>{value.length} / 2000</span>
+        </div>
         <Editable
           className='p-4 rounded-md border border-gray-200 text-[14px] !min-h-[150px] border-input bg-background px-3 py-2 text-sm !ring-offset-background file:!border-0 file:!bg-transparent file:!text-sm file:!font-medium placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50'
           renderElement={renderElement}
@@ -263,17 +266,7 @@ export const SlateEditor = ({ onUpdate }: { onUpdate: (value: string) => void })
     </div>
   )
 }
-
-const Menu = forwardRef<HTMLDivElement, PropsWithChildren>(
-  ({ className, ...props }, ref) => (
-    <div
-      {...props}
-      data-test-id="menu"
-      ref={ref}
-      className={className}
-    />
-  )
-);
+ 
 
 const Element = props => {
   const { attributes, children, element } = props
@@ -320,7 +313,7 @@ const Leaf = ({ attributes, children, leaf }: { attributes: any, children: any, 
   return <span className={
     leaf.text === '' && "pl-[0.1px]"
   } {...attributes}>{children}</span>
-} 
+}
 
 export const Button = ({
   className,
@@ -379,7 +372,7 @@ const RemoveLinkButton = () => {
           unwrapLink(editor)
         }
       }}
-      onClick={(e) => e.preventDefault()}
+      onClick={(e) => e.preventDefault()} 
     >
       <Icon>link_off</Icon>
     </Button>
