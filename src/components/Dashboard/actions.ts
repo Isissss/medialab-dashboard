@@ -32,14 +32,13 @@ const postToWebhook = async (url: string, message: EmbedBuilder) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ embeds: [message] })
-        });
-        if (!response.ok) {
-            return
-        }
+            body: JSON.stringify(message)
+        }); 
 
         return true;
     } catch (error) {
         console.error(error);
     }
-}
+
+    return;
+} 

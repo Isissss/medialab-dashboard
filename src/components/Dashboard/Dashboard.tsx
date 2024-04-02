@@ -18,7 +18,7 @@ import SlateEditor from "../SlateEditor";
 import { uploadFiles } from "@/lib/uploadthing";
 import { Image as ImageIcon } from "lucide-react";
 import { InputWithLabel } from "../ui/InputWithLabel";
-import NextImage from "next/image";
+import NextImage from "next/image"; 
 
 export function Dashboard() {
   const [messageContent, setMessageContent] = useState({
@@ -39,7 +39,7 @@ export function Dashboard() {
   }
 
   const uploadImage = async (img: File | null) => {
-    if (!img) return;
+    if (!img) return null;
 
     try {
       const file = await uploadFiles("imageUploader", {
@@ -52,7 +52,7 @@ export function Dashboard() {
     }
   }
 
-  const handleSubmit = async (e) => {
+  const onSubmitHandler = async (e) => {
     e.preventDefault();
     if (loading) return;
 
@@ -93,6 +93,8 @@ export function Dashboard() {
         variant: success ? "default" : "destructive",
       })
     }
+
+    return success;
   };
 
   const onThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,7 +135,7 @@ export function Dashboard() {
             Push een bericht naar alle Discord servers met de Discord bot.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={(e) => handleSubmit(e)}  >
+        <form onSubmit={onSubmitHandler}>
           <CardContent>
             <div className="flex flex-col lg:flex-row gap-4 w-full mb-8">
               <div className="w-full flex flex-col justify-between gap-4">
@@ -151,13 +153,15 @@ export function Dashboard() {
               </div>
             </div>
             <SlateEditor onUpdate={(value) => setMessageContent((prev) => ({ ...prev, description: value }))} />
-            <Label htmlFor="image">Grote foto (optioneel)</Label>
-            <input onChange={onBannerImageUpload}
-              className="hidden" type="file" name="image" id="image" />
-            <div className="  w-full min-h-40 h-full border-2 border-dashed rounded-md">
-              <label className="min-h-40   h-full flex justify-center items-center cursor-pointer" htmlFor="image">
-                {messageContent.image ? <NextImage width={600} height={400} src={messageContent.image.src} alt="image" className="h-full w-auto object-cover" /> : <ImageIcon size={40} />}
-              </label>
+            <div>
+              <Label htmlFor="image">Grote foto (optioneel)</Label>
+              <input onChange={onBannerImageUpload}
+                className="hidden" type="file" name="image" id="image" />
+              <div className="w-full min-h-40 h-full border-2 border-dashed rounded-md">
+                <label className="min-h-40 h-full flex justify-center items-center cursor-pointer" htmlFor="image">
+                  {messageContent.image ? <NextImage width={600} height={400} src={messageContent.image.src} alt="image" className="h-full w-auto object-cover" /> : <ImageIcon size={40} />}
+                </label>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
